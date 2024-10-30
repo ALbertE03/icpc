@@ -14,7 +14,7 @@ contests = data["contests"]
 regions = data["regions"]
 countries = data["countries"]
 cstats = data["stats"]
-    
+
 years = [int(x) for x in contests]
 
 minimal = 2010
@@ -54,11 +54,6 @@ def get_university_graph(university_contest,name):
                 s =  s1.intersection(s2)
                 if len(s)!=0:
                     c1.edge(str(y1),str(y2),label=str(len(s)))
-                    # st.write(y1)
-                    # st.write(s1)
-                    # st.write(y2)
-                    # st.write(s2)
-                    # st.write(s)
     g1.subgraph(c1)
     return g1
 
@@ -785,3 +780,25 @@ with st.container(border=True):
             st.graphviz_chart(st.graphviz_chart(get_university_graph(u2,"s2")))
         except:
             pass
+
+#Angélica
+with st.container(border=True):
+    st.text("Cantidad de universidades finalistas por país")
+
+    with st.expander("Parámetros:"):
+        st.text("Expander para parámetros")
+
+    with st.expander("Gráficos:"):
+        st.text("Expander para parámetros")
+
+#Alberto
+with st.container(border=True):
+    st.text("Posiciones y medallas por universidades")
+
+    with st.expander("Parámetros:"):
+        st.text("Expander para parámetros")
+
+    with st.expander("Gráficos:"):
+        st.text("Expander para parámetros")
+
+    

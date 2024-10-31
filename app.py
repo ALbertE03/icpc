@@ -1,13 +1,13 @@
 import streamlit as st
 import json
 import statistics as stats
-
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import graphviz as gv
 
 
-with open("data/data-2006-2024.json", "r") as file:
+with open("data/data-2006-2024.json", "r", encoding="UTF-8") as file:
     data = json.load(file)
 
 contests = data["contests"]
@@ -800,5 +800,171 @@ with st.container(border=True):
 
     with st.expander("Gráficos:"):
         st.text("Expander para parámetros")
+        
+        
+
+#Diego
+
+with st.container(border=True):
+    st.text("Posiciones y medallas por País")
+
+    with st.expander("Parámetros:"):
+
+
+        years = list(map(int, contests.keys()))
+        min_year, max_year = min(years), max(years)
+
+        year_range = st.slider("Seleccione el rango de años", min_year, max_year, (min_year, max_year))
+
+        region_names = []
+        for region_code in regions:
+            region_names.append(regions[region_code]["spanish_name"])
+
+        region_names.append("Todas")
+
+        selected_region_names = st.multiselect("Seleccione las regiones", options=region_names, default=["Todas"])
+
+        selected_region_codes = []
+        if "Todas" in selected_region_names:
+            selected_region_codes = list(regions.keys())
+        else:
+            for region_code in regions:
+                if regions[region_code]["spanish_name"] in selected_region_names:
+                    selected_region_codes.append(region_code)
+
+        valid_countries = []
+        for country, details in countries.items():
+            if details["region"] in selected_region_codes:
+                valid_countries.append(country)
+
+        valid_countries.append("Todos")
+
+        selected_countries = st.multiselect("Seleccione los países", options=valid_countries, default=["Todos"])
+
+        final_selected_countries = []
+        if "Todos" in selected_countries:
+            final_selected_countries = [country for country in valid_countries if country != "Todos"]
+        else:
+            final_selected_countries = selected_countries
+
+
+    with st.expander('Gráficos'):
+
+        #####METODO TABLA 1
+        
+        def count_places(contests, selected_countries):
+            data = {}
+            for year, contest in contests.items():
+                for entry in contest:
+                    if entry["country"] in selected_countries:
+                        try:
+                            position = int(entry["position"])
+                        except ValueError:
+                            position = 0 
+
+                        if entry["country"] not in data:
+                            data[entry["country"]] = {
+                                "País": entry["country"],
+                                "Oro": 0,
+                                "Plata": 0,
+                                "Bronce": 0,
+                                "Total": 0
+                            }
+
+                        if 1 <= position <= 4:
+                            data[entry["country"]]["Oro"] += 1
+                        elif 5 <= position <= 8:
+                            data[entry["country"]]["Plata"] += 1
+                        elif 9 <= position <= 12:
+                            data[entry["country"]]["Bronce"] += 1
+
+                        data[entry["country"]]["Total"] = (
+                            data[entry["country"]]["Oro"] +
+                            data[entry["country"]]["Plata"] +
+                            data[entry["country"]]["Bronce"]
+                        )
+
+            for country in selected_countries:
+                if country not in data:
+                    data[country] = {
+                        "País": country,
+                        "Oro": 0,
+                        "Plata": 0,
+                        "Bronce": 0,
+                        "Total": 0
+                    }
+
+            return list(data.values())
+        
+        #####METODO TABLA 2
+
+        def count_detailed_places(contests, selected_countries):
+            data = {}
+            for year, contest in contests.items():
+                for entry in contest:
+                    if entry["country"] in selected_countries:
+                        try:
+                            position = int(entry["position"])
+                        except ValueError:
+                            position = 0 
+
+                        if entry["country"] not in data:
+                            data[entry["country"]] = {"País": entry["country"]}
+                            for i in range(1, 13):
+                                data[entry["country"]][f"{i}º Lugar"] = 0
+                            data[entry["country"]]["Total"] = 0
+
+                        if 1 <= position <= 12:
+                            data[entry["country"]][f"{position}º Lugar"] += 1
+                            data[entry["country"]]["Total"] += 1
+
+            for country in selected_countries:
+                if country not in data:
+                    data[country] = {"País": country}
+                    for i in range(1, 13):
+                        data[country][f"{i}º Lugar"] = 0
+                    data[country]["Total"] = 0
+
+            return list(data.values())
+        
+        ######FILTRO GLOBAL
+
+        filtered_contests = {}
+        for year in contests:
+            if year_range[0] <= int(year) <= year_range[1]:
+                filtered_contests[year] = contests[year]
+
+        #####TABLA 1
+        summary_table = count_places(filtered_contests, final_selected_countries)
+        df_summary = pd.DataFrame(summary_table, columns=["País", "Oro", "Plata", "Bronce", "Total"])
+        df_summary = df_summary.sort_values(by="Oro",ascending=False)
+
+        #####TABLA 2
+        detailed_table = count_detailed_places(filtered_contests, final_selected_countries)
+        df_detailed = pd.DataFrame(detailed_table, columns=["País"] + [f"{i}º Lugar" for i in range(1, 13)] + ["Total"])
+        df_detailed = df_detailed.sort_values(by="Total", ascending=False)
+
+        st.write("Tabla de medallas por país:")
+        st.dataframe(df_summary)
+
+        st.write("Tabla detallada de posiciones por país:")
+        st.dataframe(df_detailed)
+
+
+
+
+
+
+
+
+
+
+
+
+        
+
+
+
+
 
     

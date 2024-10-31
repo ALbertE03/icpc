@@ -838,53 +838,7 @@ with st.container(border=True):
 
     with st.expander("Parámetros:"):
         st.text("Expander para parámetros")
-        minimal_position_parts = (
-            st.session_state["minimal_position_parts"]
-            if "minimal_position_parts" in st.session_state
-            else 10
-        )
-        izq, der = st.select_slider(
-            "Selecciona el rango de años",
-            options=range(minimal, maximal + 1),
-            value=(2010, maximal),
-            key="minimal_position_parts",
-        )
-        mostrar = ['total','oro','plata','bronce']
-        medalla = st.selectbox("Selecione la medalla",mostrar)
-        index = mostrar.index(medalla)
-        df = posiciones(range(izq,der+1))
-        total_podio ={}
-        for year,value in df.items():
-            for i in value:
-                if i['university'] not in total_podio.keys():
-                    total_podio[i['university']] = {"pos":[i['position']],'year':[year]}
-                else:
-                    total_podio[i['university']]['pos'].append(i['position'])
-                    total_podio[i['university']]['year'].append(year)
 
-        for i in total_podio:
-            for j in total_podio[i]['pos']:
-                j = int(j)
-                if 1<=j<=4:
-                    if 'oro' not in total_podio[i]:
-                        total_podio[i]['oro']=1
-                    else:
-                        total_podio[i]['oro']+=1
-                elif 5<=j<=8:
-                    if 'plata' not in total_podio[i]:
-                        total_podio[i]['plata']=1
-                    else:
-                        total_podio[i]['plata']+=1
-                else:
-                    if 'bronce' not in total_podio[i]:
-                        total_podio[i]['bronce']=1
-                    else:
-                        total_podio[i]['bronce']+=1
-                        
-        for i in total_podio:
-            total_podio[i]['total']= total_podio[i].get('oro',0)+total_podio[i].get('plata',0)+total_podio[i].get('bronce',0)
-    with st.expander("Gráficos:"):
-        st.text("Expander para parámetros")
         
         
 

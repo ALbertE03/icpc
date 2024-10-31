@@ -783,20 +783,92 @@ with st.container(border=True):
         except:
             pass
 
+
 # Angélica
-with st.container(border=True):
+with st.container(border=True): 
     st.text("Cantidad de universidades finalistas por país")
 
     with st.expander("Parámetros:"):
-        st.text("Expander para parámetros")
+        min_univ_count = (
+            st.session_state["min_univ_count"]
+            if "min_univ_count" in st.session_state
+            else 5  
+        )
+
+        start_year, end_year = st.select_slider(
+            "Selecciona el rango de años",
+            options=range(minimal, maximal + 1),
+            value=(2010, maximal),
+            key="univ_period",
+        )
+
+        univ_counts = [i for i in range(1, end_year - start_year + 2)]
+
+        if min_univ_count < end_year - start_year + 1:
+            count_index = univ_counts.index(min_univ_count)
+        else:
+            count_index = univ_counts.index(end_year - start_year + 1)
+
+        min_finalists = st.selectbox(
+            "Seleccione la cantidad mínima de universidades finalistas",
+            options=univ_counts,
+            index=count_index,
+            key="univ_min",
+        )
+
+        st.session_state["min_univ_count"] = min_finalists
 
     with st.expander("Gráficos:"):
-        st.text("Expander para parámetros")
+        finalists_by_country = {}
+
+        for year in range(start_year, end_year + 1):
+            year = str(year)
+            for team in contests[year]:
+                country = team["country"]
+                university = team["university"]
+
+                if country not in finalists_by_country:
+                    finalists_by_country[country] = set()
+                
+                finalists_by_country[country].add(university)
+
+        finalists_by_country = {
+            country: universities
+            for country, universities in finalists_by_country.items()
+            if len(universities) >= min_univ_count
+        }
+
+        x_counts = []
+        y_countries = []
+        filtered_finalists = [
+            (country, len(universities))
+            for country, universities in finalists_by_country.items()
+        ]
+        filtered_finalists.sort(key=lambda x: x[1])
+
+        for item in filtered_finalists:
+            x_counts.append(item[1])  
+            y_countries.append(item[0]) 
+
+        fig_finalists = go.Figure(go.Bar(x=x_counts, y=y_countries, orientation="h"))
+
+        fig_finalists.update_layout(
+            margin={"t": 0, "l": 0},
+            height=700 if 700 > 18 * len(x_counts) else 18 * len(x_counts),
+        )
+
+        st.plotly_chart(fig_finalists, use_container_width=True)
+
+
+
+
+
+
 
 def posiciones(range_year):
     end ={} 
     for i in range_year:    
-          end[str(i)]=contests[str(i)][:12]
+        end[str(i)]=contests[str(i)][:12]
     return end
 
 def graficar(dic_graf,opcion):

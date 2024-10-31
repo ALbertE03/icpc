@@ -6,7 +6,6 @@ import plotly.express as px
 import plotly.graph_objects as go
 import graphviz as gv
 
-
 with open("data/data-2006-2024.json", "r") as file:
     data = json.load(file)
 
@@ -21,6 +20,8 @@ minimal = 2010
 maximal = max(years)
 
 
+
+
 def get_contests_from_period(first=minimal, last=maximal):
     return {x: y for x, y in contests.items() if first <= int(x) <= last}
 
@@ -33,9 +34,10 @@ def get_university_participations(university, contests):
                 cu[y] = u
     return cu
 
-def get_university_graph(university_contest,name):
-    g1 = gv.Digraph(name+"-parent")
-    c1 = gv.Digraph(name+"-child")
+
+def get_university_graph(university_contest, name):
+    g1 = gv.Digraph(name + "-parent")
+    c1 = gv.Digraph(name + "-child")
     c1.attr(rank="same")
     for y in range(2010, 2025):
         if not str(y) in university_contest:
@@ -46,14 +48,14 @@ def get_university_graph(university_contest,name):
     for y in range(2011, 2025):
         c1.edge(str(fr), str(y), style="invis")
         fr = y
-    for y1 in range(2010,2024):
-        for y2 in range(y1+1,2025):
+    for y1 in range(2010, 2024):
+        for y2 in range(y1 + 1, 2025):
             if (str(y1) in university_contest) and (str(y2) in university_contest):
                 s1 = set(university_contest[str(y1)]["players"])
                 s2 = set(university_contest[str(y2)]["players"])
-                s =  s1.intersection(s2)
-                if len(s)!=0:
-                    c1.edge(str(y1),str(y2),label=str(len(s)))
+                s = s1.intersection(s2)
+                if len(s) != 0:
+                    c1.edge(str(y1), str(y2), label=str(len(s)))
     g1.subgraph(c1)
     return g1
 
@@ -762,26 +764,26 @@ with st.container(border=True):
         s1_univs = st.selectbox(
             "Selecciona una universidad:", options=s_univs, index=hi, key="s1_univs"
         )
-        
+
         u1 = get_university_participations(s1_univs, contests)
 
         try:
-            st.graphviz_chart(get_university_graph(u1,"s1"))
+            st.graphviz_chart(get_university_graph(u1, "s1"))
         except:
             pass
 
         s2_univs = st.selectbox(
             "Selecciona otra universidad:", options=s_univs, index=oi, key="s2_univs"
         )
-        
+
         u2 = get_university_participations(s2_univs, contests)
-        
+
         try:
-            st.graphviz_chart(st.graphviz_chart(get_university_graph(u2,"s2")))
+            st.graphviz_chart(st.graphviz_chart(get_university_graph(u2, "s2")))
         except:
             pass
 
-#Angélica
+# Angélica
 with st.container(border=True):
     st.text("Cantidad de universidades finalistas por país")
 
@@ -791,14 +793,95 @@ with st.container(border=True):
     with st.expander("Gráficos:"):
         st.text("Expander para parámetros")
 
-#Alberto
+def posiciones(range_year):
+    end ={} 
+    for i in range_year:    
+          end[str(i)]=contests[str(i)][:12]
+    return end
+
+def graficar(dic_graf,opcion):
+    name_uni = list(dic_graf.keys())
+    x = []
+    for i in name_uni:
+        try:
+            x.append(dic_graf[i][opcion])
+        except:
+            x.append(0)
+
+    comb = list(zip(x,name_uni))
+    comb_ordenadas = sorted(comb,reverse=True)
+    new_x, new_names_uni = zip(*comb_ordenadas)
+    fig = go.Figure(go.Bar(x=new_x, y=new_names_uni, orientation="h"))
+    fig.update_layout(
+            margin={"t": 0, "l": 0},
+            height=1000,
+            width=800,
+            yaxis=dict(tickfont=dict(size=11))
+        )
+    if opcion != 'total':
+        st.markdown(
+                "<h1 class = 'titulos'>Medallas de "+ opcion+ " alcazadas por Universidad</h1> <style>.titulos{font-size: 20px;text-align: center; }</style>",
+                unsafe_allow_html=True,
+                )
+    else:
+        st.markdown(
+                "<h1 class = 'titulos'> "+opcion+ " de Medallas alcazadas por Universidad</h1> <style>.titulos{font-size: 20px;text-align: center; }</style>",
+                unsafe_allow_html=True,
+                )
+    fig.update_yaxes(autorange="reversed")
+    st.plotly_chart(fig)  
+
+# Alberto
 with st.container(border=True):
     st.text("Posiciones y medallas por universidades")
 
     with st.expander("Parámetros:"):
         st.text("Expander para parámetros")
+        minimal_position_parts = (
+            st.session_state["minimal_position_parts"]
+            if "minimal_position_parts" in st.session_state
+            else 10
+        )
+        izq, der = st.select_slider(
+            "Selecciona el rango de años",
+            options=range(minimal, maximal + 1),
+            value=(2010, maximal),
+            key="minimal_position_parts",
+        )
+        mostrar = ['total','oro','plata','bronce']
+        medalla = st.selectbox("Selecione la medalla",mostrar)
+        index = mostrar.index(medalla)
+        df = posiciones(range(izq,der+1))
+        total_podio ={}
+        for year,value in df.items():
+            for i in value:
+                if i['university'] not in total_podio.keys():
+                    total_podio[i['university']] = {"pos":[i['position']],'year':[year]}
+                else:
+                    total_podio[i['university']]['pos'].append(i['position'])
+                    total_podio[i['university']]['year'].append(year)
 
+        for i in total_podio:
+            for j in total_podio[i]['pos']:
+                j = int(j)
+                if 1<=j<=4:
+                    if 'oro' not in total_podio[i]:
+                        total_podio[i]['oro']=1
+                    else:
+                        total_podio[i]['oro']+=1
+                elif 5<=j<=8:
+                    if 'plata' not in total_podio[i]:
+                        total_podio[i]['plata']=1
+                    else:
+                        total_podio[i]['plata']+=1
+                else:
+                    if 'bronce' not in total_podio[i]:
+                        total_podio[i]['bronce']=1
+                    else:
+                        total_podio[i]['bronce']+=1
+                        
+        for i in total_podio:
+            total_podio[i]['total']= total_podio[i].get('oro',0)+total_podio[i].get('plata',0)+total_podio[i].get('bronce',0)
     with st.expander("Gráficos:"):
-        st.text("Expander para parámetros")
-
-    
+        graficar(total_podio,mostrar[index])
+        

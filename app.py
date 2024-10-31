@@ -840,7 +840,8 @@ def get_apply_region_filter(df_current,filters,y_end):
     for i in _name:
         if i in y_end:
             _end.append(i)
-    df_result_end = df_result.loc[_end]      
+
+    df_result_end = df_result.loc[_end]
     return df_result_end
 
 with st.container(border=True):
@@ -853,20 +854,34 @@ with st.container(border=True):
             if "minimal_position_parts" in st.session_state
             else 10
         )
+
+         
         izq, der = st.select_slider(
             "Selecciona el rango de años",
             options=range(minimal, maximal + 1),
             value=(2010, maximal),
             key="minimal_position_parts",
         )
+        minimal_uni_parts = (
+            st.session_state["minimal_uni_parts"]
+            if "minimal_uni_parts" in st.session_state
+            else 10
+        )
+        uni_participations = [i for i in range(1, der - izq + 2)]
+
+        if minimal_uni_parts < der - izq + 1:
+            uni_ind = uni_participations.index(minimal_uni_parts)
+        else:
+            uni_ind = uni_participations.index(der - izq + 1)
         u_min_uni = st.selectbox(
             "Seleccione la cantidad de participaciones mínima",
-            options=u_participations,
-            index=u_ind,
+            options=uni_participations,
+            index=uni_ind,
             key="u_part_uni",
         )
+        st.session_state["minimal_uni_parts"] = u_min_uni
         universities = {}
-        for year in range(u_first, u_last + 1):
+        for year in range(izq, der + 1):
             year = str(year)
             for team in contests[year]:
                 c = team["university"]

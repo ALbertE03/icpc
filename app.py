@@ -858,7 +858,12 @@ def isNull(df):
             if j!=0:
                 return False
         return True
-          
+def filter_name(a,b):
+    s=[]
+    for i in b:
+        if i in a:
+            s.append(i)
+    return s if len(s)!=0 else b                
 with st.container(border=True):
     st.text("Posiciones y medallas por universidades")
 
@@ -1016,6 +1021,8 @@ with st.container(border=True):
             df_t=df_t.drop(index=o)
             df_t.columns = [ f'posición {x}'for x in range(1,13)]+['total']
             df_t = df_t.sort_values(by='total', ascending=False)
-            st.dataframe(df_t,use_container_width=True)
+            current_index_name = df_t.index
+            comp = filter_name(y_uni,current_index_name)
+            st.dataframe(df_t.loc[comp],use_container_width=True)
             
             

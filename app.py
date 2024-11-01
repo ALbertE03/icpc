@@ -1056,7 +1056,7 @@ with st.container(border=True):
 
             # table 2
             m = medal_table(df_new)
-            st.dataframe(m,use_container_width=True)
+            st.dataframe(m[:12],use_container_width=True)
 
         elif region_filter =='void':
             st.dataframe([],use_container_width=True)

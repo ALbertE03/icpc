@@ -5,7 +5,8 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import graphviz as gv
-import pandas as pd 
+import pandas as pd
+
 
 with open("data/data-2006-2024.json", "r", encoding="UTF-8") as file:
     data = json.load(file)
@@ -785,7 +786,7 @@ with st.container(border=True):
             pass
 
 
-
+# Angélica
 # Angélica
 with st.container(border=True): 
     st.text("Cantidad de universidades finalistas por país")
@@ -876,52 +877,6 @@ with st.container(border=True):
 
         st.plotly_chart(fig_finalists, use_container_width=True)
 
-
-
-
-
-
-
-
-
-def posiciones(range_year):
-    end ={} 
-    for i in range_year:    
-        end[str(i)]=contests[str(i)][:12]
-    return end
-
-def graficar(dic_graf,opcion):
-    name_uni = list(dic_graf.keys())
-    x = []
-    for i in name_uni:
-        try:
-            x.append(dic_graf[i][opcion])
-        except:
-            x.append(0)
-
-    comb = list(zip(x,name_uni))
-    comb_ordenadas = sorted(comb,reverse=True)
-    new_x, new_names_uni = zip(*comb_ordenadas)
-    fig = go.Figure(go.Bar(x=new_x, y=new_names_uni, orientation="h"))
-    fig.update_layout(
-            margin={"t": 0, "l": 0},
-            height=1000,
-            width=800,
-            yaxis=dict(tickfont=dict(size=11))
-        )
-    if opcion != 'total':
-        st.markdown(
-                "<h1 class = 'titulos'>Medallas de "+ opcion+ " alcazadas por Universidad</h1> <style>.titulos{font-size: 20px;text-align: center; }</style>",
-                unsafe_allow_html=True,
-                )
-    else:
-        st.markdown(
-                "<h1 class = 'titulos'> "+opcion+ " de Medallas alcazadas por Universidad</h1> <style>.titulos{font-size: 20px;text-align: center; }</style>",
-                unsafe_allow_html=True,
-                )
-    fig.update_yaxes(autorange="reversed")
-    st.plotly_chart(fig)  
-    
 
 # Alberto
 def get_position(range_year):
@@ -1292,13 +1247,25 @@ with st.container(border=True):
         st.write("Tabla detallada de posiciones por país:")
         st.dataframe(df_detailed)
 
-    
-    
-    
-    
-    
-    
-    
-    
-    
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+
+
+
+
+
+    

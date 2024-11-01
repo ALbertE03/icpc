@@ -1122,13 +1122,28 @@ with st.container(border=True):
                 _m = medal_table(df_t)
                 st.dataframe(_m,use_container_width=True)
             else:
-                df_filter_transpose = get_apply_region_filter(transposed_df_sorted,region_filter,y_uni)
-                st.dataframe(df_filter_transpose,use_container_width=True)
-        else:
-            end_index=[]
-            current_name_list =  transposed_df_sorted.index
-            for i in current_name_list:
-                if i in y_uni:
-                    end_index.append(i)
-            end_df = transposed_df_sorted.loc[end_index]
-            st.dataframe(end_df,use_container_width=True)
+                missing =  12-df_t.shape[0]                
+                r=[]
+                w=[]
+                for i,j in df_t_aux.iterrows():
+                        if isNull(j[:-1]):
+                            r.append(i)
+                        elif i not in current_index_name:
+                                w.append(i)
+                df_t_aux.drop(index=r) 
+                df_t_aux=df_t_aux.loc[w[:missing]]
+                df_t_aux=df_t_aux.iloc[:,:12]
+                df_t_aux.iloc[:, :-1]=0   
+                df_t_aux.iloc[:, -1]=1
+                df_t_aux.columns = [ f'posición {x}'for x in range(1,13)]
+                df_t_aux['total'] = df_t_aux[df_t_aux.columns].sum(axis=1)
+                concat_df = pd.concat([df_t,df_t_aux],axis=0)
+                current_index_name_ = concat_df.index
+                comp = filter_name(y_uni,current_index_name_)
+                concat_df=concat_df.loc[comp]
+                concat_df.rename_axis("Universidades", inplace=True)
+                st.dataframe(concat_df,use_container_width=True)
+
+                ## table 2
+                m_ = medal_table(concat_df)
+                st.dataframe(m_,use_container_width=True)

@@ -6,7 +6,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import graphviz as gv
 
-with open("data/data-2006-2024.json", "r", encoding="utf-8") as file:
+with open("data/data-2006-2024.json", "r", encoding="UTF-8") as file:
     data = json.load(file)
 
 contests = data["contests"]

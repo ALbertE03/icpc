@@ -1,14 +1,15 @@
 import streamlit as st
 import json
 import statistics as stats
-
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import graphviz as gv
 import pandas as pd
 from collections import Counter
 
-with open("data/data-2006-2024.json", "r") as file:
+
+with open("data/data-2006-2024.json", "r", encoding="UTF-8") as file:
     data = json.load(file)
 
 contests = data["contests"]
@@ -785,22 +786,87 @@ with st.container(border=True):
         except:
             pass
 
+
 # Angélica
-with st.container(border=True):
+with st.container(border=True): 
     st.text("Cantidad de universidades finalistas por país")
 
     with st.expander("Parámetros:"):
-        st.text("Expander para parámetros")
+        min_univ_count = (
+            st.session_state["min_univ_count"]
+            if "min_univ_count" in st.session_state
+            else 5  
+        )
+
+        start_year, end_year = st.select_slider(
+            "Selecciona el rango de años",
+            options=range(minimal, maximal + 1),
+            value=(2010, maximal),
+            key="univ_period",
+        )
+
+        univ_counts = [i for i in range(1, end_year - start_year + 2)]
+
+        if min_univ_count < end_year - start_year + 1:
+            count_index = univ_counts.index(min_univ_count)
+        else:
+            count_index = univ_counts.index(end_year - start_year + 1)
+
+        min_finalists = st.selectbox(
+            "Seleccione la cantidad mínima de universidades finalistas",
+            options=univ_counts,
+            index=count_index,
+            key="univ_min",
+        )
+
+        st.session_state["min_univ_count"] = min_finalists
 
     with st.expander("Gráficos:"):
-        st.text("Expander para parámetros")
+        finalists_by_country = {}
 
+        for year in range(start_year, end_year + 1):
+            year = str(year)
+            for team in contests[year]:
+                country = team["country"]
+                university = team["university"]
+
+                if country not in finalists_by_country:
+                    finalists_by_country[country] = set()
+                
+                finalists_by_country[country].add(university)
+
+        finalists_by_country = {
+            country: universities
+            for country, universities in finalists_by_country.items()
+            if len(universities) >= min_univ_count
+        }
+
+        x_counts = []
+        y_countries = []
+        filtered_finalists = [
+            (country, len(universities))
+            for country, universities in finalists_by_country.items()
+        ]
+        filtered_finalists.sort(key=lambda x: x[1])
+
+        for item in filtered_finalists:
+            x_counts.append(item[1])  
+            y_countries.append(item[0]) 
+
+        fig_finalists = go.Figure(go.Bar(x=x_counts, y=y_countries, orientation="h"))
+
+        fig_finalists.update_layout(
+            margin={"t": 0, "l": 0},
+            height=700 if 700 > 18 * len(x_counts) else 18 * len(x_counts),
+        )
+
+        st.plotly_chart(fig_finalists, use_container_width=True)
 
 # Alberto
 def get_position(range_year):
     end ={} 
     for i in range_year:    
-          end[str(i)]=contests[str(i)]
+        end[str(i)]=contests[str(i)]
     return end
 
 def  counting(value,lista):
@@ -1056,28 +1122,13 @@ with st.container(border=True):
                 _m = medal_table(df_t)
                 st.dataframe(_m,use_container_width=True)
             else:
-                missing =  12-df_t.shape[0]                
-                r=[]
-                w=[]
-                for i,j in df_t_aux.iterrows():
-                        if isNull(j[:-1]):
-                            r.append(i)
-                        elif i not in current_index_name:
-                                w.append(i)
-                df_t_aux.drop(index=r) 
-                df_t_aux=df_t_aux.loc[w[:missing]]
-                df_t_aux=df_t_aux.iloc[:,:12]
-                df_t_aux.iloc[:, :-1]=0   
-                df_t_aux.iloc[:, -1]=1
-                df_t_aux.columns = [ f'posición {x}'for x in range(1,13)]
-                df_t_aux['total'] = df_t_aux[df_t_aux.columns].sum(axis=1)
-                concat_df = pd.concat([df_t,df_t_aux],axis=0)
-                current_index_name_ = concat_df.index
-                comp = filter_name(y_uni,current_index_name_)
-                concat_df=concat_df.loc[comp]
-                concat_df.rename_axis("Universidades", inplace=True)
-                st.dataframe(concat_df,use_container_width=True)
-
-                ## table 2
-                m_ = medal_table(concat_df)
-                st.dataframe(m_,use_container_width=True)
+                df_filter_transpose = get_apply_region_filter(transposed_df_sorted,region_filter,y_uni)
+                st.dataframe(df_filter_transpose,use_container_width=True)
+        else:
+            end_index=[]
+            current_name_list =  transposed_df_sorted.index
+            for i in current_name_list:
+                if i in y_uni:
+                    end_index.append(i)
+            end_df = transposed_df_sorted.loc[end_index]
+            st.dataframe(end_df,use_container_width=True)

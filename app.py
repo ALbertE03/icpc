@@ -1,10 +1,11 @@
 import streamlit as st
 import json
 import statistics as stats
-
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import graphviz as gv
+import pandas as pd 
 
 with open("data/data-2006-2024.json", "r", encoding="UTF-8") as file:
     data = json.load(file)
@@ -920,8 +921,57 @@ def graficar(dic_graf,opcion):
                 )
     fig.update_yaxes(autorange="reversed")
     st.plotly_chart(fig)  
+    
 
 # Alberto
+def get_position(range_year):
+    end ={} 
+    for i in range_year:    
+        end[str(i)]=contests[str(i)][:12]
+    return end
+
+def  counting(value,list):
+    count = 0
+    for i in list:
+        if i ==value:
+            count+=1
+    return count
+
+def get_uni_country_regions(df,filters):
+    if len(filters)==0:
+        return "void"
+    if filters[0] == "Todas":
+        return None
+
+    country = []
+    for i in df:
+        for j in df[i]:
+            re = countries[j['country']]['region']
+            if regions[re]['spanish_name'] in filters:
+                country.append((j['university'],j['country'],re))
+    return country
+
+def name_coincidence(list1,list2):
+    result = []
+    for i in list1:
+        if i in list2:
+            result.append(i)
+    return result
+
+def get_apply_region_filter(df_current,filters,y_end):
+    name_list= [ x[0] for x in filters]
+    current_names = list(df_current.index)
+    final_filter = name_coincidence(current_names,name_list)
+    df_result = df_current.loc[final_filter]
+    _name = df_result.index
+    _end=[]
+    for i in _name:
+        if i in y_end:
+            _end.append(i)
+
+    df_result_end = df_result.loc[_end]
+    return df_result_end
+
 with st.container(border=True):
     st.text("Posiciones y medallas por universidades")
 
@@ -932,46 +982,323 @@ with st.container(border=True):
             if "minimal_position_parts" in st.session_state
             else 10
         )
+
+         
         izq, der = st.select_slider(
             "Selecciona el rango de años",
             options=range(minimal, maximal + 1),
             value=(2010, maximal),
             key="minimal_position_parts",
         )
-        mostrar = ['total','oro','plata','bronce']
-        medalla = st.selectbox("Selecione la medalla",mostrar)
-        index = mostrar.index(medalla)
-        df = posiciones(range(izq,der+1))
-        total_podio ={}
+        minimal_uni_parts = (
+            st.session_state["minimal_uni_parts"]
+            if "minimal_uni_parts" in st.session_state
+            else 10
+        )
+        uni_participations = [i for i in range(1, der - izq + 2)]
+
+        if minimal_uni_parts < der - izq + 1:
+            uni_ind = uni_participations.index(minimal_uni_parts)
+        else:
+            uni_ind = uni_participations.index(der - izq + 1)
+        u_min_uni = st.selectbox(
+            "Seleccione la cantidad de participaciones mínima",
+            options=uni_participations,
+            index=uni_ind,
+            key="u_part_uni",
+        )
+        st.session_state["minimal_uni_parts"] = u_min_uni
+        universities = {}
+        for year in range(izq, der + 1):
+            year = str(year)
+            for team in contests[year]:
+                c = team["university"]
+                if c in universities:
+                    universities[c]["count"] += 1
+                else:
+                    universities[c] = {"count": 1, "country": team["country"]}
+
+        if "Todas" not in u_s_regions:
+            universities = {
+                x: y
+                for x, y in universities.items()
+                if regions[countries[y["country"]]["region"]]["spanish_name"]
+                in u_s_regions
+            }
+
+        
+        y_uni = []
+        u_items = [i for i in universities.items() if i[1]["count"] >= u_min_uni]
+        u_items.sort(key=lambda x: x[1]["count"])
+        for item in u_items:
+            y_uni.append(item[0])
+
+        a_n_regions = ["Todas"] + [x for x in a_d_regions]
+        region_uni = st.multiselect(
+            "Selecione la región a analizar",
+            options=a_n_regions,
+            default=["Todas"],
+            key="regions_uni",
+        )
+        
+        df = get_position(range(izq,der+1))
+        
+        region_filter = get_uni_country_regions(df,region_uni)
+        total_podium = {}
         for year,value in df.items():
             for i in value:
-                if i['university'] not in total_podio.keys():
-                    total_podio[i['university']] = {"pos":[i['position']],'year':[year]}
+                if i['university'] not in total_podium.keys():
+                    total_podium[i['university']] = {"pos":[i['position']],'year':[year]}
                 else:
-                    total_podio[i['university']]['pos'].append(i['position'])
-                    total_podio[i['university']]['year'].append(year)
+                    total_podium[i['university']]['pos'].append(i['position'])
+                    total_podium[i['university']]['year'].append(year)
 
-        for i in total_podio:
-            for j in total_podio[i]['pos']:
+        for i in total_podium:
+            for j in total_podium[i]['pos']:
                 j = int(j)
+                
                 if 1<=j<=4:
-                    if 'oro' not in total_podio[i]:
-                        total_podio[i]['oro']=1
+                    if 'gold' not in total_podium[i]:
+                        total_podium[i]['gold']=1
                     else:
-                        total_podio[i]['oro']+=1
+                        total_podium[i]['gold']+=1
                 elif 5<=j<=8:
-                    if 'plata' not in total_podio[i]:
-                        total_podio[i]['plata']=1
+                    if 'silver' not in total_podium[i]:
+                        total_podium[i]['silver']=1
                     else:
-                        total_podio[i]['plata']+=1
+                        total_podium[i]['silver']+=1
                 else:
-                    if 'bronce' not in total_podio[i]:
-                        total_podio[i]['bronce']=1
+                    if 'bronze' not in total_podium[i]:
+                        total_podium[i]['bronze']=1
                     else:
-                        total_podio[i]['bronce']+=1
-                        
-        for i in total_podio:
-            total_podio[i]['total']= total_podio[i].get('oro',0)+total_podio[i].get('plata',0)+total_podio[i].get('bronce',0)
-    with st.expander("Gráficos:"):
-        graficar(total_podio,mostrar[index])
+                        total_podium[i]['bronze']+=1
         
+    with st.expander("Gráficos:"):
+        
+        dataframe = pd.DataFrame(total_podium).T
+        dataframe.fillna(0,inplace=True)
+        dataframe.rename_axis("universidades", inplace=True)
+
+        df_copy = dataframe.copy()
+        dataframe.drop('pos',axis=1,inplace=True)
+        dataframe.drop('year',axis=1,inplace=True)
+        
+
+        dataframe['total'] = dataframe[['gold', 'silver','bronze']].sum(axis=1)
+        dataframe.columns = ['oro','plata','bronce','total']
+        df_sorted = dataframe.sort_values(by='total', ascending=False)
+
+        if region_filter is not None:
+            if region_filter =="void":
+                st.dataframe([],use_container_width=True)
+            else:
+                df_filter = get_apply_region_filter(df_sorted,region_filter,y_uni)
+                st.dataframe(df_filter,use_container_width=True)
+        else:
+            end_index_medal_table=[]
+            current_name_list_ =  df_sorted.index
+            for i in current_name_list_:
+                if i in y_uni:
+                    end_index_medal_table.append(i)
+            end_df_medal_table = df_sorted.loc[end_index_medal_table]
+            st.dataframe(end_df_medal_table,use_container_width=True)
+        
+        
+        position_counting = {}
+        for i,t in enumerate(df_copy['pos']):
+            row = df_copy.index[i]
+            position_counting[row]={}
+            for j in t:
+                number_of_times_j = counting(j,t)
+                position_counting[row][j]=number_of_times_j
+                      
+        position_counting_df = pd.DataFrame(position_counting)
+        position_counting_df.fillna(0,inplace=True)
+        position_counting_df.index = [int(x) for x in list(position_counting_df.index)]
+        position_counting_df.sort_index(ascending=True,inplace=True)
+        transposed_df = position_counting_df.T
+
+        transposed_df.rename_axis("universidades", inplace=True)
+        transposed_df.columns =[f"posición {x}" for x in range(1,13)]
+        transposed_df['total'] = transposed_df[transposed_df.columns].sum(axis=1)
+        transposed_df_sorted = transposed_df.sort_values(by='total', ascending=False)
+
+        if region_filter is not None:
+            if region_filter =='void':
+                st.dataframe([],use_container_width=True)
+            else:
+                df_filter_transpose = get_apply_region_filter(transposed_df_sorted,region_filter,y_uni)
+                st.dataframe(df_filter_transpose,use_container_width=True)
+        else:
+            end_index=[]
+            current_name_list =  transposed_df_sorted.index
+            for i in current_name_list:
+                if i in y_uni:
+                    end_index.append(i)
+            end_df = transposed_df_sorted.loc[end_index]
+            st.dataframe(end_df,use_container_width=True)
+            
+#Diego
+with st.container(border=True):
+    
+    st.text("Posiciones y medallas por País")
+    
+    with st.expander("Parámetros:"):
+        
+        #Filtro de Anhos
+        years = list(map(int, contests.keys()))
+        min_year, max_year = min(years), max(years)
+        year_range = st.slider("Seleccione el rango de años", min_year, max_year, (min_year, max_year))
+
+        #Filtro de Paricipaciones
+        max_participations = year_range[1] - year_range[0] + 1
+        participaciones_minimas_options = []
+        for i in range(1, max_participations + 1):
+            participaciones_minimas_options.append(i)
+        participaciones_minimas = st.selectbox("Participaciones Mínimas", participaciones_minimas_options, index=0)
+
+        #Filtro de Regiones
+        region_names = []
+        for region_code in regions:
+            region_names.append(regions[region_code]["spanish_name"])
+        region_names.append("Todas")
+        selected_region_names = st.multiselect("Seleccione las regiones", options=region_names, default=["Todas"])
+
+        selected_region_codes = []
+        if "Todas" in selected_region_names:
+            selected_region_codes = list(regions.keys())
+        else:
+            for region_code in regions:
+                if regions[region_code]["spanish_name"] in selected_region_names:
+                    selected_region_codes.append(region_code)
+                    
+                    
+        #Filtro de Paises
+        valid_countries = []
+        for country, details in countries.items():
+            if details["region"] in selected_region_codes:
+                valid_countries.append(country)
+        valid_countries.append("Todos")
+        selected_countries = st.multiselect("Seleccione los países", options=valid_countries, default=["Todos"])
+
+        final_selected_countries = []
+        if "Todos" in selected_countries:
+            for country in valid_countries:
+                if country != "Todos":
+                    final_selected_countries.append(country)
+        else:
+            final_selected_countries = selected_countries
+            
+            
+    with st.expander('Gráficos'):
+        
+        ####METODO TABLA 1
+        def count_places(contests, selected_countries):
+            data = {}
+            participations = {country: set() for country in selected_countries}
+            for year, contest in contests.items():
+                for entry in contest:
+                    if entry["country"] in selected_countries:
+                        try:
+                            position = int(entry["position"])
+                        except ValueError:
+                            position = 0
+
+                        if entry["country"] not in data:
+                            data[entry["country"]] = {
+                                "País": entry["country"],
+                                "Oro": 0,
+                                "Plata": 0,
+                                "Bronce": 0,
+                                "Total": 0,
+                                "Participaciones en el periodo": 0
+                            }
+
+                        if 1 <= position <= 4:
+                            data[entry["country"]]["Oro"] += 1
+                        elif 5 <= position <= 8:
+                            data[entry["country"]]["Plata"] += 1
+                        elif 9 <= position <= 12:
+                            data[entry["country"]]["Bronce"] += 1
+
+                        participations[entry["country"]].add(year)
+
+            for country in data:
+                data[country]["Total"] = data[country]["Oro"] + data[country]["Plata"] + data[country]["Bronce"]
+                data[country]["Participaciones en el periodo"] = len(participations[country])
+
+            filtered_data = []
+            for entry in data.values():
+                if entry["Participaciones en el periodo"] >= participaciones_minimas:
+                    filtered_data.append(entry)
+
+            return filtered_data
+        
+        ####METODO TABLA 2
+
+        def count_detailed_places(contests, selected_countries):
+            data = {}
+            participations = {country: set() for country in selected_countries}
+            for year, contest in contests.items():
+                for entry in contest:
+                    if entry["country"] in selected_countries:
+                        try:
+                            position = int(entry["position"])
+                        except ValueError:
+                            position = 0
+
+                        if entry["country"] not in data:
+                            data[entry["country"]] = {"País": entry["country"]}
+                            for i in range(1, 13):
+                                data[entry["country"]][f"{i}º Lugar"] = 0
+                            data[entry["country"]]["Total"] = 0
+                            data[entry["country"]]["Participaciones en el periodo"] = 0
+
+                        if 1 <= position <= 12:
+                            data[entry["country"]][f"{position}º Lugar"] += 1
+                            data[entry["country"]]["Total"] += 1
+
+                        participations[entry["country"]].add(year)
+
+            for country in data:
+                data[country]["Participaciones en el periodo"] = len(participations[country])
+
+            filtered_data = []
+            for entry in data.values():
+                if entry["Participaciones en el periodo"] >= participaciones_minimas:
+                    filtered_data.append(entry)
+
+            return filtered_data
+        
+        #Filtrado General
+
+        filtered_contests = {}
+        for year in contests:
+            if year_range[0] <= int(year) <= year_range[1]:
+                filtered_contests[year] = contests[year]
+
+        summary_table = count_places(filtered_contests, final_selected_countries)
+        detailed_table = count_detailed_places(filtered_contests, final_selected_countries)
+
+        df_summary = pd.DataFrame(summary_table, columns=["País", "Oro", "Plata", "Bronce", "Total", "Participaciones en el periodo"])
+        df_summary = df_summary.sort_values(by="Oro", ascending=False)
+
+        df_detailed = pd.DataFrame(detailed_table, columns=["País"] + [f"{i}º Lugar" for i in range(1, 13)] + ["Total", "Participaciones en el periodo"])
+        df_detailed = df_detailed.sort_values(by="Total", ascending=False)
+
+        #Printeo
+        st.write("Tabla de medallas por país:")
+        st.dataframe(df_summary, use_container_width=True)
+        st.write("Tabla detallada de posiciones por país:")
+        st.dataframe(df_detailed)
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+

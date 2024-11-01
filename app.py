@@ -815,6 +815,8 @@ def get_uni_country_regions(df,filters):
         return "void"
     if "Todas" in filters:
         return None
+    if len(filters)==8:
+        return None
     a={}
     for i in df:
         for j in df[i]:
@@ -849,8 +851,14 @@ def aux(poduim_df):
         for j in t:
             number_of_times_j = counting(j,t)
             position_counting[row][j]=number_of_times_j
-    return position_counting   
+    return position_counting 
 
+def isNull(df):
+        for j in df:
+            if j!=0:
+                return False
+        return True
+          
 with st.container(border=True):
     st.text("Posiciones y medallas por universidades")
 
@@ -982,6 +990,7 @@ with st.container(border=True):
             result = aux(df_x.T)
             df_result = pd.DataFrame(result)
             df_result[df_result.isna()]=0  
+            
             index=[]
             for i in df_result.index:
                 try:
@@ -990,7 +999,23 @@ with st.container(border=True):
                     index.append(int(i.split("-")[0]))
 
             df_result.index = index
+            
             df_result.sort_index(ascending=True,inplace=True)
-            df_result.index = range(1,107)
-            df_result['total'] = df_result[df_result.columns].sum(axis=1)            
-            st.dataframe(df_result,use_container_width=True)     
+             
+            df_result.index = range(1,len(df_result.index)+1)
+            df_t = df_result.T
+            df_t=df_t.iloc[:,:12]
+
+            o=[]
+            
+            df_t['total'] = df_t[df_t.columns].sum(axis=1)
+            
+            for i,j in df_t.iterrows():
+                    if isNull(j[:-1]):
+                        o.append(i)
+            df_t=df_t.drop(index=o)
+            df_t.columns = [ f'posición {x}'for x in range(1,13)]+['total']
+            df_t = df_t.sort_values(by='total', ascending=False)
+            st.dataframe(df_t,use_container_width=True)
+            
+            

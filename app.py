@@ -799,12 +799,12 @@ with st.container(border=True):
 def get_position(range_year):
     end ={} 
     for i in range_year:    
-          end[str(i)]=contests[str(i)][:12]
+          end[str(i)]=contests[str(i)]
     return end
 
-def  counting(value,list):
+def  counting(value,lista):
     count = 0
-    for i in list:
+    for i in lista:
         if i ==value:
             count+=1
     return count
@@ -812,38 +812,33 @@ def  counting(value,list):
 def get_uni_country_regions(df,filters):
     if len(filters)==0:
         return "void"
-    if filters[0] == "Todas":
+    if "Todas" in filters:
         return None
-
-    country = []
+    a={}
     for i in df:
         for j in df[i]:
             re = countries[j['country']]['region']
             if regions[re]['spanish_name'] in filters:
-                country.append((j['university'],j['country'],re))
-    return country
+                if i not in a.keys():
+                    a[i] = [(j['university'],j['country'],j['position'],re)]
+                else:
+                    a[i].append((j['university'],j['country'],j['position'],re))
+        
+    return a
 
-def name_coincidence(list1,list2):
-    result = []
-    for i in list1:
-        if i in list2:
-            result.append(i)
-    return result
-
-def get_apply_region_filter(df_current,filters,y_end):
-    name_list= [ x[0] for x in filters]
-    current_names = list(df_current.index)
-    final_filter = name_coincidence(current_names,name_list)
-    df_result = df_current.loc[final_filter]
-    _name = df_result.index
-    _end=[]
-    for i in _name:
-        if i in y_end:
-            _end.append(i)
-
-    df_result_end = df_result.loc[_end]
-    return df_result_end
-
+def get_list_year(df,year):
+    a=[]
+    for i in df[year]:
+        a.append(i['university'])
+    return a
+def counter(value,merge):
+    r = []
+    c=0
+    for i in merge:
+        if i[0]==value:
+            c+=1
+            r.append(i[1])
+    return c,r
 with st.container(border=True):
     st.text("Posiciones y medallas por universidades")
 
@@ -914,98 +909,90 @@ with st.container(border=True):
         )
         
         df = get_position(range(izq,der+1))
-        
         region_filter = get_uni_country_regions(df,region_uni)
-        total_podium = {}
+        uni_name=[]
+        for i in range(izq,der+1):
+            uni_name.append(get_list_year(df,str(i)))
+        
+        total_podium ={}
         for year,value in df.items():
             for i in value:
-                if i['university'] not in total_podium.keys():
+                if i["university"] not in total_podium.keys():
                     total_podium[i['university']] = {"pos":[i['position']],'year':[year]}
                 else:
                     total_podium[i['university']]['pos'].append(i['position'])
                     total_podium[i['university']]['year'].append(year)
+        poduim_df = pd.DataFrame(total_podium)
 
-        for i in total_podium:
-            for j in total_podium[i]['pos']:
-                j = int(j)
-                
-                if 1<=j<=4:
-                    if 'gold' not in total_podium[i]:
-                        total_podium[i]['gold']=1
-                    else:
-                        total_podium[i]['gold']+=1
-                elif 5<=j<=8:
-                    if 'silver' not in total_podium[i]:
-                        total_podium[i]['silver']=1
-                    else:
-                        total_podium[i]['silver']+=1
-                else:
-                    if 'bronze' not in total_podium[i]:
-                        total_podium[i]['bronze']=1
-                    else:
-                        total_podium[i]['bronze']+=1
         
     with st.expander("Gráficos:"):
         
-        dataframe = pd.DataFrame(total_podium).T
-        dataframe.fillna(0,inplace=True)
-        dataframe.rename_axis("universidades", inplace=True)
-
-        df_copy = dataframe.copy()
-        dataframe.drop('pos',axis=1,inplace=True)
-        dataframe.drop('year',axis=1,inplace=True)
-        
-
-        dataframe['total'] = dataframe[['gold', 'silver','bronze']].sum(axis=1)
-        dataframe.columns = ['oro','plata','bronce','total']
-        df_sorted = dataframe.sort_values(by='total', ascending=False)
-
-        if region_filter is not None:
-            if region_filter =="void":
-                st.dataframe([],use_container_width=True)
-            else:
-                df_filter = get_apply_region_filter(df_sorted,region_filter,y_uni)
-                st.dataframe(df_filter,use_container_width=True)
-        else:
-            end_index_medal_table=[]
-            current_name_list_ =  df_sorted.index
-            for i in current_name_list_:
-                if i in y_uni:
-                    end_index_medal_table.append(i)
-            end_df_medal_table = df_sorted.loc[end_index_medal_table]
-            st.dataframe(end_df_medal_table,use_container_width=True)
-        
-        
         position_counting = {}
-        for i,t in enumerate(df_copy['pos']):
-            row = df_copy.index[i]
+        for i,t in enumerate(poduim_df.T['pos']):
+            row = poduim_df.T.index[i]
             position_counting[row]={}
             for j in t:
                 number_of_times_j = counting(j,t)
                 position_counting[row][j]=number_of_times_j
-                      
-        position_counting_df = pd.DataFrame(position_counting)
-        position_counting_df.fillna(0,inplace=True)
-        position_counting_df.index = [int(x) for x in list(position_counting_df.index)]
-        position_counting_df.sort_index(ascending=True,inplace=True)
-        transposed_df = position_counting_df.T
+        
+        df_new = pd.DataFrame(position_counting)
+        df_new[df_new.isna()]=0
+        index=[]
+        if region_filter is None:
+            for i in df_new.index:
+                try:
+                    index.append(int(i))
+                except:
+                    index.append(int(i.split("-")[0]))
 
-        transposed_df.rename_axis("universidades", inplace=True)
-        transposed_df.columns =[f"posición {x}" for x in range(1,13)]
-        transposed_df['total'] = transposed_df[transposed_df.columns].sum(axis=1)
-        transposed_df_sorted = transposed_df.sort_values(by='total', ascending=False)
-
-        if region_filter is not None:
-            if region_filter =='void':
-                st.dataframe([],use_container_width=True)
-            else:
-                df_filter_transpose = get_apply_region_filter(transposed_df_sorted,region_filter,y_uni)
-                st.dataframe(df_filter_transpose,use_container_width=True)
+            df_new.index = index
+            df_new.sort_index(ascending=True,inplace=True)
+            df_new = df_new[:12].T
+            df_new['total'] = df_new[df_new.columns].sum(axis=1)
+            df_new = df_new.sort_values(by='total', ascending=False)
+            st.dataframe(df_new[df_new['total']>0],use_container_width=True)
+        elif region_filter =='void':
+            st.dataframe([],use_container_width=True)
         else:
-            end_index=[]
-            current_name_list =  transposed_df_sorted.index
-            for i in current_name_list:
-                if i in y_uni:
-                    end_index.append(i)
-            end_df = transposed_df_sorted.loc[end_index]
-            st.dataframe(end_df,use_container_width=True)
+            merge = []
+            key = list(region_filter.keys())
+            for i in key:
+                for j in region_filter[i]:
+                    merge.append((j[0],j[2]))
+                    
+            dic_filter ={}
+            mini= float("inf")
+            for i in merge:
+                if i not in dic_filter:
+                    count, lis_pos = counter(i[0],merge)
+                    try:
+                        minin = int(min(lis_pos))
+                        if mini>= minin:
+                            mini = minin
+                    except:
+                      pass  
+                    dic_filter[i[0]]={'pos':lis_pos,"count":count}
+            
+           
+            name_unis_prev = dic_filter.keys()
+            dic ={}
+            for name in name_unis_prev:
+                p = []
+                for i in dic_filter[name]['pos']:
+                    try:
+                        i = int(i)
+                        p.append(i)
+                    except: 
+                        continue
+                    dic[name]=p[:]
+            _dic={}  
+            for i in dic:
+                for j in list(dic[i]):
+                    c = counting(j,list(dic[i]))
+                    if i not in _dic:
+                        _dic[i]['pos']=[j]
+                        _dic[i]['cont']=[c]
+                    else:
+                        _dic[i]['pos'].append(j)
+                        _dic[i]['pos'].append(c)
+                    

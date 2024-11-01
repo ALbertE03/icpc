@@ -1332,10 +1332,15 @@ with st.container(border=True):
         df_detailed = df_detailed.sort_values(by="Total", ascending=False)
 
         ###PRINTS
+        df_summary.index = df_summary.index + 1
+        df_detailed.index = df_detailed.index + 1
+
         st.write("Tabla de medallas por país:")
         st.dataframe(df_summary, use_container_width=True)
+
         st.write("Tabla detallada de posiciones por país:")
-        st.dataframe(df_detailed)
+        st.dataframe(df_detailed, use_container_width=True)
+
 
 
 

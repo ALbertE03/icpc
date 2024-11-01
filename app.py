@@ -877,7 +877,6 @@ with st.container(border=True):
 
         st.plotly_chart(fig_finalists, use_container_width=True)
 
-
 # Alberto
 def get_position(range_year):
     end ={} 

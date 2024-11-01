@@ -853,17 +853,29 @@ def aux(poduim_df):
             position_counting[row][j]=number_of_times_j
     return position_counting 
 
-def isNull(df):
-        for j in df:
+def isNull(lista):
+        for j in lista:
             if j!=0:
                 return False
         return True
+
 def filter_name(a,b):
     s=[]
     for i in b:
         if i in a:
             s.append(i)
-    return s if len(s)!=0 else b                
+    return s if len(s)!=0 else b
+
+def medal_table(df):
+    df.columns= [x for x in range(1,14)]
+    new_df = df.iloc[:,:-1]
+    count_gold = new_df.iloc[:,:4].sum(axis=1)
+    count_silver = new_df.iloc[:,4:8].sum(axis=1)            
+    count_bronze = new_df.iloc[:,8:].sum(axis=1)
+    result = pd.concat([count_gold,count_silver,count_bronze],axis=1)
+    result['total']=result.sum(axis=1)
+    result.columns = ['oro','plata','bronce']+['total']
+    return result
 with st.container(border=True):
     st.text("Posiciones y medallas por universidades")
 
@@ -968,8 +980,20 @@ with st.container(border=True):
             df_new = df_new[:12].T
             df_new['total'] = df_new[df_new.columns].sum(axis=1)
             df_new = df_new.sort_values(by='total', ascending=False)
-            st.dataframe(df_new[df_new['total']>0],use_container_width=True)
+            current_index_name = df_new.index
+            comp = filter_name(y_uni,current_index_name)
+            df_new=df_new.loc[comp]
+            df_new=df_new[df_new['total']>0]
+            df_new.rename_axis("universidades", inplace=True)
+            df_new.columns = [ f'posición {x}'for x in range(1,13)]+['total']
+            st.dataframe(df_new[:12],use_container_width=True)
+
+            # table 2
+            m = medal_table(df_new)
+            st.dataframe(m,use_container_width=True)
+
         elif region_filter =='void':
+            st.dataframe([],use_container_width=True)
             st.dataframe([],use_container_width=True)
         else:
             merge = []
@@ -990,7 +1014,7 @@ with st.container(border=True):
                     except:
                       pass  
                     dic_filter[i[0]]={'pos':lis_pos,"count":count}
-            
+
             df_x = pd.DataFrame.from_dict(dic_filter, orient='index')
             result = aux(df_x.T)
             df_result = pd.DataFrame(result)
@@ -1009,10 +1033,11 @@ with st.container(border=True):
              
             df_result.index = range(1,len(df_result.index)+1)
             df_t = df_result.T
+            df_t_aux = df_t.loc[:,13:].copy()
             df_t=df_t.iloc[:,:12]
-
-            o=[]
             
+            o=[]
+
             df_t['total'] = df_t[df_t.columns].sum(axis=1)
             
             for i,j in df_t.iterrows():
@@ -1022,7 +1047,37 @@ with st.container(border=True):
             df_t.columns = [ f'posición {x}'for x in range(1,13)]+['total']
             df_t = df_t.sort_values(by='total', ascending=False)
             current_index_name = df_t.index
+            
             comp = filter_name(y_uni,current_index_name)
-            st.dataframe(df_t.loc[comp],use_container_width=True)
-            
-            
+            df_t=df_t.loc[comp]
+            if df_t.shape[0]>=12:
+                df_t.rename_axis("Universidades", inplace=True)
+                st.dataframe(df_t[:12],use_container_width=True)
+                _m = medal_table(df_t)
+                st.dataframe(_m,use_container_width=True)
+            else:
+                missing =  12-df_t.shape[0]                
+                r=[]
+                w=[]
+                for i,j in df_t_aux.iterrows():
+                        if isNull(j[:-1]):
+                            r.append(i)
+                        elif i not in current_index_name:
+                                w.append(i)
+                df_t_aux.drop(index=r) 
+                df_t_aux=df_t_aux.loc[w[:missing]]
+                df_t_aux=df_t_aux.iloc[:,:12]
+                df_t_aux.iloc[:, :-1]=0   
+                df_t_aux.iloc[:, -1]=1
+                df_t_aux.columns = [ f'posición {x}'for x in range(1,13)]
+                df_t_aux['total'] = df_t_aux[df_t_aux.columns].sum(axis=1)
+                concat_df = pd.concat([df_t,df_t_aux],axis=0)
+                current_index_name_ = concat_df.index
+                comp = filter_name(y_uni,current_index_name_)
+                concat_df=concat_df.loc[comp]
+                concat_df.rename_axis("Universidades", inplace=True)
+                st.dataframe(concat_df,use_container_width=True)
+
+                ## table 2
+                m_ = medal_table(concat_df)
+                st.dataframe(m_,use_container_width=True)

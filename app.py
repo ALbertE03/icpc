@@ -1120,7 +1120,7 @@ with st.container(border=True):
                 df_t.rename_axis("Universidades", inplace=True)
                 st.dataframe(df_t[:12],use_container_width=True)
                 _m = medal_table(df_t)
-                st.dataframe(_m,use_container_width=True)
+                st.dataframe(_m[:12],use_container_width=True)
             else:
                 missing =  12-df_t.shape[0]                
                 r=[]

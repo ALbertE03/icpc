@@ -6,6 +6,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import graphviz as gv
 import pandas as pd
+from collections import Counter
 
 with open("data/data-2006-2024.json", "r") as file:
     data = json.load(file)
@@ -839,6 +840,17 @@ def counter(value,merge):
             c+=1
             r.append(i[1])
     return c,r
+
+def aux(poduim_df):
+    position_counting = {}
+    for i,t in enumerate(poduim_df.T['pos']):
+        row = poduim_df.T.index[i]
+        position_counting[row]={}
+        for j in t:
+            number_of_times_j = counting(j,t)
+            position_counting[row][j]=number_of_times_j
+    return position_counting   
+
 with st.container(border=True):
     st.text("Posiciones y medallas por universidades")
 
@@ -926,19 +938,12 @@ with st.container(border=True):
 
         
     with st.expander("Gráficos:"):
-        
-        position_counting = {}
-        for i,t in enumerate(poduim_df.T['pos']):
-            row = poduim_df.T.index[i]
-            position_counting[row]={}
-            for j in t:
-                number_of_times_j = counting(j,t)
-                position_counting[row][j]=number_of_times_j
-        
+        position_counting = aux(poduim_df)
         df_new = pd.DataFrame(position_counting)
         df_new[df_new.isna()]=0
-        index=[]
+        
         if region_filter is None:
+            index=[]
             for i in df_new.index:
                 try:
                     index.append(int(i))
@@ -973,26 +978,19 @@ with st.container(border=True):
                       pass  
                     dic_filter[i[0]]={'pos':lis_pos,"count":count}
             
-           
-            name_unis_prev = dic_filter.keys()
-            dic ={}
-            for name in name_unis_prev:
-                p = []
-                for i in dic_filter[name]['pos']:
-                    try:
-                        i = int(i)
-                        p.append(i)
-                    except: 
-                        continue
-                    dic[name]=p[:]
-            _dic={}  
-            for i in dic:
-                for j in list(dic[i]):
-                    c = counting(j,list(dic[i]))
-                    if i not in _dic:
-                        _dic[i]['pos']=[j]
-                        _dic[i]['cont']=[c]
-                    else:
-                        _dic[i]['pos'].append(j)
-                        _dic[i]['pos'].append(c)
-                    
+            df_x = pd.DataFrame.from_dict(dic_filter, orient='index')
+            result = aux(df_x.T)
+            df_result = pd.DataFrame(result)
+            df_result[df_result.isna()]=0  
+            index=[]
+            for i in df_result.index:
+                try:
+                    index.append(int(i))
+                except:
+                    index.append(int(i.split("-")[0]))
+
+            df_result.index = index
+            df_result.sort_index(ascending=True,inplace=True)
+            df_result.index = range(1,107)
+            df_result['total'] = df_result[df_result.columns].sum(axis=1)            
+            st.dataframe(df_result,use_container_width=True)     

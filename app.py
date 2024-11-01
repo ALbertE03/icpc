@@ -6,7 +6,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import graphviz as gv
 
-with open("data/data-2006-2024.json", "r") as file:
+with open("data/data-2006-2024.json", "r", encoding="utf-8") as file:
     data = json.load(file)
 
 contests = data["contests"]
@@ -784,6 +784,7 @@ with st.container(border=True):
             pass
 
 
+
 # Angélica
 with st.container(border=True): 
     st.text("Cantidad de universidades finalistas por país")
@@ -817,6 +818,13 @@ with st.container(border=True):
         )
 
         st.session_state["min_univ_count"] = min_finalists
+        
+        regions_map = {regions[x]["spanish_name"]: x for x in regions}
+        u_regions = ["Todas"] + [x for x in regions_map]
+
+        selected_regions = st.multiselect(
+            "Seleccione la región deseada", options=u_regions, default=["Todas"]
+        )
 
     with st.expander("Gráficos:"):
         finalists_by_country = {}
@@ -838,6 +846,14 @@ with st.container(border=True):
             if len(universities) >= min_univ_count
         }
 
+        if "Todas" not in selected_regions:
+            selected_region_keys = {regions_map[region] for region in selected_regions}
+            finalists_by_country = {
+                country: universities
+                for country, universities in finalists_by_country.items()
+                if countries[country]["region"] in selected_region_keys
+            }
+
         x_counts = []
         y_countries = []
         filtered_finalists = [
@@ -858,6 +874,8 @@ with st.container(border=True):
         )
 
         st.plotly_chart(fig_finalists, use_container_width=True)
+
+
 
 
 

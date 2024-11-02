@@ -882,9 +882,9 @@ def medal_table(df):
 def apply_filter(df,r,count_participation):
     def occurrences(row):
         counting = {}
-        for elemento in row:
-            if pd.notnull(elemento):
-                counting[elemento] = row.tolist().count(elemento)
+        for element in row:
+            if pd.notnull(element):
+                counting[element] = row.tolist().count(element)
         return counting
 
     count_row = df.apply(occurrences, axis=1)
@@ -911,7 +911,6 @@ def apply_filter(df,r,count_participation):
         #table 2
         m = medal_table(p)
         m = pd.concat([m,count_participation],axis=1)
-        m = m.loc[r]
         m.rename_axis("Universidades",inplace=True)
         m.columns = ['Oro','Plata','Bronce']+['Total']+['Paticipaciones']
         m =  m.sort_values(

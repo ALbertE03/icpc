@@ -5,7 +5,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import graphviz as gv
-import pandas as pd
+
 
 
 
@@ -912,17 +912,17 @@ def get_uni_country_regions(izq,der,_country,filters):
     return end
 
 def medal_table(df):
-    df.columns= [x for x in range(1,14)]
+    df.columns= [x for x in range(1,15)]
     new_df = df.iloc[:,:-1]
     count_gold = new_df.iloc[:,:4].sum(axis=1)
     count_silver = new_df.iloc[:,4:8].sum(axis=1)            
     count_bronze = new_df.iloc[:,8:].sum(axis=1)
     result = pd.concat([count_gold,count_silver,count_bronze],axis=1)
     result['total']=result.sum(axis=1)
-    result.columns = ['oro','plata','bronce']+['total']
+    
     return result
 
-def apply_filter(df,r):
+def apply_filter(df,r,count_participation):
     def occurrences(row):
             conteo = {}
             for elemento in row:
@@ -934,21 +934,28 @@ def apply_filter(df,r):
     count_df=count_df.T
     count_df= count_df.iloc[:,:12]
     
-    count_df['total'] = count_df[count_df.columns].sum(axis=1)
-    count_df.columns = [ f'posición {x}'for x in range(1,13)]+['total']
+    count_df['Total'] = count_df[count_df.columns].sum(axis=1)
+    count_df = pd.concat([count_df,count_participation],axis=1)
+    count_df.columns = [ f'Posición {x}'for x in range(1,13)]+['Total']+['Paticipaciones en el periodo']
     if len(r)!=0:
         p = count_df.loc[r]
         p.rename_axis("Universidades",inplace=True)
         st.dataframe(p,use_container_width=True)
+
         m = medal_table(count_df)
+        m = pd.concat([m,count_participation],axis=1)
         m = m.loc[r]
         m.rename_axis("Universidades",inplace=True)
+        m.columns = ['Oro','Plata','Bronce']+['Total']+['Paticipaciones en el periodo']
         st.dataframe(m,use_container_width=True)
     else:
         count_df.rename_axis("Universidades",inplace=True)
         st.dataframe(count_df,use_container_width=True) 
+
         m = medal_table(count_df)
+        m = pd.concat([m,count_participation],axis=1)
         m.rename_axis("Universidades",inplace=True)
+        m.columns = ['Oro','Plata','Bronce']+['Total']+['Paticipaciones en el periodo']
         st.dataframe(m,use_container_width=True)
 
 with st.container(border=True):
@@ -981,7 +988,7 @@ with st.container(border=True):
             key="u_part_min1",
         )
 
-        st.session_state["minimal_u_parts"] = u_min_parts
+        st.session_state["minimal_u1_parts"] = u_min_parts
 
         a_n_regions = ["Todas"] + [x for x in a_d_regions]
         region_uni = st.multiselect(
@@ -998,7 +1005,7 @@ with st.container(border=True):
         ranks = count_series[count_series >= u_min_parts].index
         region_filter = get_uni_country_regions(izq,der,country,region_uni)
         if region_filter is None:
-            apply_filter(df,ranks)
+            apply_filter(df,ranks,count_series)
         elif region_filter =='void':
             st.dataframe([],use_container_width=True)
             st.dataframe([],use_container_width=True)
@@ -1006,8 +1013,9 @@ with st.container(border=True):
             region_filter = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in region_filter.items()]))
             count_total_ = region_filter.values.flatten()  
             count_series_ = pd.Series(count_total_).value_counts()
+
             rank = count_series_[count_series_ >=u_min_parts ].index
-            apply_filter(region_filter,rank)
+            apply_filter(region_filter,rank,count_series_)
             
 #Diego
 with st.container(border=True):

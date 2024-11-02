@@ -879,62 +879,39 @@ with st.container(border=True):
         st.plotly_chart(fig_finalists, use_container_width=True)
 
 # Alberto
+
 def get_position(range_year):
     end ={} 
+    d=set()
     for i in range_year:
         a = []
-        d=[]
         for j in  contests[str(i)]:
             a.append(j['university'])
-            d.append(j['country'])
+            d.add(j['country'])
         end[str(i)]=a
     return end,d
 
-def  counting(value,lista):
-    count = 0
-    for i in lista:
-        if i ==value:
-            count+=1
-    return count
-
-def get_uni_country_regions(uni,_country,filters):
-    if len(filters)==0:
-        return "void"
+def get_uni_country_regions(izq,der,_country,filters):
     if "Todas" in filters:
         return None
-    if len(filters)==8:
-        return None
+    if len(filters)==0:
+        return 'void' 
+    domain=[]
+    for i in _country:   
+        domain.append((i,countries[i]['region']))
+    result =[]
+    for i in domain:
+        if regions[i[1]]['spanish_name'] in filters:
+            result.append(i[0])
+    end ={}
+    for i in range(izq,der+1):
+        a=[]
+        for j in contests[str(i)]:
+            if j['country'] in result:
+                a.append(j['university'])
+        end[str(i)]=a
 
-def get_list_year(df,year):
-    a=[]
-    for i in df[year]:
-        a.append(i['university'])
-    return a
-def counter(value,merge):
-    r = []
-    c=0
-    for i in merge:
-        if i[0]==value:
-            c+=1
-            r.append(i[1])
-    return c,r
-
-def aux(poduim_df):
-    position_counting = {}
-    for i,t in enumerate(poduim_df.T['pos']):
-        row = poduim_df.T.index[i]
-        position_counting[row]={}
-        for j in t:
-            number_of_times_j = counting(j,t)
-            position_counting[row][j]=number_of_times_j
-    return position_counting 
-
-def isNull(lista):
-        for j in lista:
-            if j!=0:
-                return False
-        return True
-
+    return end
 def filter_name(a,b):
     s=[]
     for i in b:
@@ -952,25 +929,41 @@ def medal_table(df):
     result['total']=result.sum(axis=1)
     result.columns = ['oro','plata','bronce']+['total']
     return result
+def apply_filter(df):
+    def occurrences(row):
+            conteo = {}
+            for elemento in row:
+                if pd.notnull(elemento): 
+                    conteo[elemento] = row.tolist().count(elemento) 
+            return conteo
+    count_row = df.apply(occurrences, axis=1)
+    count_df = pd.DataFrame(count_row.tolist()).fillna(0).astype(int)
+    count_df=count_df.T
+    count_df= count_df.iloc[:,:12]
+    count_df.rename_axis("Universidades",inplace=True)
+    count_df['total'] = count_df[count_df.columns].sum(axis=1)
+    count_df.columns = [ f'posición {x}'for x in range(1,13)]+['total']
+    st.dataframe(count_df,use_container_width=True)
+
+    m = medal_table(count_df)
+    st.dataframe(m,use_container_width=True)
 
 with st.container(border=True):
     st.text("Posiciones y medallas por universidades")
 
     with st.expander("Parámetros:"):
         st.text("Expander para parámetros")
-        minimal_position_parts = (
-            st.session_state["minimal_position_parts"]
-            if "minimal_position_parts" in st.session_state
-            else 10
-        )
-
-         
         izq, der = st.select_slider(
             "Selecciona el rango de años",
             options=range(minimal, maximal + 1),
             value=(2010, maximal),
             key="minimal_position_parts",
         )
+        max_ = der - izq + 1
+        participaciones_minimas_ = []
+        for i in range(1, max_ + 1):
+            participaciones_minimas_.append(i)
+        _minimal = st.selectbox("Participaciones Mínimas", participaciones_minimas_, index=0,key='min')
 
         a_n_regions = ["Todas"] + [x for x in a_d_regions]
         region_uni = st.multiselect(
@@ -979,31 +972,17 @@ with st.container(border=True):
             default=["Todas"],
             key="regions_uni",
         )
-        
+    with st.expander("Gráficos:"):
         df,country = get_position(range(izq,der+1))
         df = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in df.items()]))
-        #region_filter = get_uni_country_regions(df,country,region_uni)
-        #        
-        def occurrences(row):
-            conteo = {}
-            for elemento in row:
-                if pd.notnull(elemento): 
-                    conteo[elemento] = row.tolist().count(elemento) 
-            return conteo
-        count_row = df.apply(occurrences, axis=1)
-        count_df = pd.DataFrame(count_row.tolist()).fillna(0).astype(int)
-        count_df=count_df.T
-        count_df= count_df.iloc[:,:12]
-        count_df.rename_axis("Universidades",inplace=True)
-        count_df['total'] = count_df[count_df.columns].sum(axis=1)
-        count_df.columns = [ f'posición {x}'for x in range(1,13)]+['total']
-        st.dataframe(count_df)
-       
- 
-    with st.expander("Gráficos:"):
-        pass
-        
-        
+        region_filter = get_uni_country_regions(izq,der,country,region_uni)
+        if region_filter is None:
+            apply_filter(df)
+        elif region_filter =='void':
+            st.dataframe([],use_container_width=True)
+            st.dataframe([],use_container_width=True)
+        else:
+            apply_filter(region_filter)
             
 #Diego
 with st.container(border=True):

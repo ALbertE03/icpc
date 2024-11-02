@@ -909,8 +909,9 @@ def apply_filter(df,r,count_participation):
         st.dataframe(p,use_container_width=True)
          
         #table 2
-        m = medal_table(p)
+        m = medal_table(count_df)
         m = pd.concat([m,count_participation],axis=1)
+        m= m.loc[r]
         m.rename_axis("Universidades",inplace=True)
         m.columns = ['Oro','Plata','Bronce']+['Total']+['Paticipaciones']
         m =  m.sort_values(

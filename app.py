@@ -22,10 +22,8 @@ years = [int(x) for x in contests]
 minimal = 2010
 maximal = max(years)
 
-
 def get_contests_from_period(first=minimal, last=maximal):
     return {x: y for x, y in contests.items() if first <= int(x) <= last}
-
 
 def get_university_participations(university, contests):
     cu = {}
@@ -34,7 +32,6 @@ def get_university_participations(university, contests):
             if u["university"] == university:
                 cu[y] = u
     return cu
-
 
 def get_university_graph(university_contest, name):
     g1 = gv.Digraph(name + "-parent")
@@ -60,16 +57,10 @@ def get_university_graph(university_contest, name):
     g1.subgraph(c1)
     return g1
 
-
 with st.container(border=True):
     st.text("Participaciones por país")
 
     with st.expander("Parámetros:"):
-        minimal_parts = (
-            st.session_state["minimal_parts"]
-            if "minimal_parts" in st.session_state
-            else 10
-        )
 
         first, last = st.select_slider(
             "Selecciona el rango de años",
@@ -77,20 +68,15 @@ with st.container(border=True):
             value=(2010, maximal),
         )
 
-        participations = [i for i in range(1, last - first + 2)]
-
-        if minimal_parts < last - first + 1:
-            ind = participations.index(minimal_parts)
-        else:
-            ind = participations.index(last - first + 1)
+        participations = [i for i in range(1, 16)]
 
         min_parts = st.selectbox(
             "Seleccione la cantidad de participaciones mínima",
             options=participations,
-            index=ind,
+            index=9,
         )
 
-        st.session_state["minimal_parts"] = min_parts
+
 
         d_regions = {regions[x]["spanish_name"]: x for x in regions}
         n_regions = ["Todas"] + [x for x in d_regions]
@@ -142,11 +128,6 @@ with st.container(border=True):
     st.text("Participaciones por universidades")
 
     with st.expander("Parámetros:"):
-        minimal_u_parts = (
-            st.session_state["minimal_u_parts"]
-            if "minimal_u_parts" in st.session_state
-            else 10
-        )
 
         u_first, u_last = st.select_slider(
             "Selecciona el rango de años",
@@ -155,21 +136,15 @@ with st.container(border=True):
             key="u_part_period",
         )
 
-        u_participations = [i for i in range(1, u_last - u_first + 2)]
+        u_participations = [i for i in range(1, 16)]
 
-        if minimal_u_parts < u_last - u_first + 1:
-            u_ind = u_participations.index(minimal_u_parts)
-        else:
-            u_ind = u_participations.index(u_last - u_first + 1)
 
         u_min_parts = st.selectbox(
             "Seleccione la cantidad de participaciones mínima",
             options=u_participations,
-            index=u_ind,
+            index=9,
             key="u_part_min",
         )
-
-        st.session_state["minimal_u_parts"] = u_min_parts
 
         u_d_regions = {regions[x]["spanish_name"]: x for x in regions}
         u_n_regions = ["Todas"] + [x for x in u_d_regions]
@@ -252,9 +227,8 @@ with st.container(border=True):
         p_univs = st.multiselect(
             "Selecciona las universidades:",
             options=list(p_univs),
-            # default=m_p_univs
         )
-        # st.session_state["m_p_univs"]=p_univs
+        
 
     with st.expander("Gráfico:"):
         p_max = []
@@ -313,7 +287,6 @@ with st.container(border=True):
             yaxis_title="Problemas resueltos",
         )
         st.plotly_chart(pfig, use_container_width=True)
-
 
 with st.container(border=True):
     st.text("Lugar general por universidades")
@@ -784,18 +757,10 @@ with st.container(border=True):
         except:
             pass
 
-
-# Angélica
-# Angélica
 with st.container(border=True):
     st.text("Cantidad de universidades finalistas por país")
 
     with st.expander("Parámetros:"):
-        min_univ_count = (
-            st.session_state["min_univ_count"]
-            if "min_univ_count" in st.session_state
-            else 5
-        )
 
         start_year, end_year = st.select_slider(
             "Selecciona el rango de años",
@@ -804,17 +769,12 @@ with st.container(border=True):
             key="univ_period",
         )
 
-        univ_counts = [i for i in range(1, end_year - start_year + 2)]
-
-        if min_univ_count < end_year - start_year + 1:
-            count_index = univ_counts.index(min_univ_count)
-        else:
-            count_index = univ_counts.index(end_year - start_year + 1)
+        univ_counts = [i for i in range(1, 16)]
 
         min_finalists = st.selectbox(
             "Seleccione la cantidad mínima de universidades finalistas",
             options=univ_counts,
-            index=count_index,
+            index=4,
             key="univ_min",
         )
 
@@ -844,7 +804,7 @@ with st.container(border=True):
         finalists_by_country = {
             country: universities
             for country, universities in finalists_by_country.items()
-            if len(universities) >= min_univ_count
+            if len(universities) >= min_finalists
         }
 
         if "Todas" not in selected_regions:
@@ -876,9 +836,6 @@ with st.container(border=True):
 
         st.plotly_chart(fig_finalists, use_container_width=True)
 
-# Alberto
-
-
 def get_position(range_year):
     end = {}
     d = set()
@@ -889,7 +846,6 @@ def get_position(range_year):
             d.add(j["country"])
         end[str(i)] = a
     return end, d
-
 
 def get_uni_country_regions(izq, der, _country, filters):
     if "Todas" in filters:
@@ -912,14 +868,12 @@ def get_uni_country_regions(izq, der, _country, filters):
         end[str(i)] = a
     return end
 
-
 def filter_name(a, b):
     s = []
     for i in b:
         if i in a:
             s.append(i)
     return s if len(s) != 0 else b
-
 
 def medal_table(df):
     df.columns = [x for x in range(1, 14)]
@@ -935,7 +889,6 @@ def medal_table(df):
         ascending=False
     )
     return result
-
 
 def apply_filter(df):
     def occurrences(row):
@@ -963,14 +916,10 @@ def apply_filter(df):
     st.write("Tabla de medallas por universidades:")
     st.dataframe(m, use_container_width=True)
 
-    
-
-
 with st.container(border=True):
     st.text("Posiciones y medallas por universidades")
 
     with st.expander("Parámetros:"):
-        st.text("Expander para parámetros")
         izq, der = st.select_slider(
             "Selecciona el rango de años",
             options=range(minimal, maximal + 1),
@@ -982,7 +931,7 @@ with st.container(border=True):
         for i in range(1, max_ + 1):
             participaciones_minimas_.append(i)
         _minimal = st.selectbox(
-            "Participaciones Mínimas", participaciones_minimas_, index=0, key="min"
+            "Selecccione la cantidad de participaciones Mínimas", participaciones_minimas_, index=0, key="min"
         )
 
         a_n_regions = ["Todas"] + [x for x in a_d_regions]
@@ -992,6 +941,7 @@ with st.container(border=True):
             default=["Todas"],
             key="regions_uni",
         )
+    
     with st.expander("Gráficos:"):
         df, country = get_position(range(izq, der + 1))
         df = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in df.items()]))
@@ -1024,7 +974,7 @@ with st.container(border=True):
         for i in range(1, max_participations + 1):
             participaciones_minimas_options.append(i)
         participaciones_minimas = st.selectbox(
-            "Participaciones Mínimas", participaciones_minimas_options, index=0
+            "Selecccione la cantidad de participaciones Mínimas", participaciones_minimas_options, index=0
         )
 
         region_names = []

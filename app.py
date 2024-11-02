@@ -877,7 +877,6 @@ def medal_table(df):
     count_bronze = new_df.iloc[:,8:].sum(axis=1)
     result = pd.concat([count_gold,count_silver,count_bronze],axis=1)
     result['total']=result.sum(axis=1)
-    
     return result
 
 def apply_filter(df,r,count_participation):
@@ -895,28 +894,54 @@ def apply_filter(df,r,count_participation):
     
     count_df['Total'] = count_df[count_df.columns].sum(axis=1)
     count_df = pd.concat([count_df,count_participation],axis=1)
-    count_df.columns = [ f'Posición {x}'for x in range(1,13)]+['Total']+['Paticipaciones en el periodo']
+
+    count_df.columns = [f"{x}º" for x in range(1, 13)] + ["Total"]+['Paticipaciones']
+    
     if len(r)!=0:
+        #table1
         p = count_df.loc[r]
         p.rename_axis("Universidades",inplace=True)
+        p=p.sort_values(
+        by=[f"{x}º" for x in range(1, 13)] + ["Total"]+['Paticipaciones'],
+        ascending=False
+    )
+        st.write("Tabla de posiciones por universidades:")
         st.dataframe(p,use_container_width=True)
-
-        m = medal_table(count_df)
+         
+        #table 2
+        m = medal_table(p)
         m = pd.concat([m,count_participation],axis=1)
         m = m.loc[r]
         m.rename_axis("Universidades",inplace=True)
-        m.columns = ['Oro','Plata','Bronce']+['Total']+['Paticipaciones en el periodo']
+        m.columns = ['Oro','Plata','Bronce']+['Total']+['Paticipaciones']
+        m =  m.sort_values(
+        by=["Oro", "Plata", "Bronce"] + ["Total"],
+        ascending=False
+        )
+        st.write("Tabla de medallas por universidades:")
         st.dataframe(m,use_container_width=True)
-    else:
-        count_df.rename_axis("Universidades",inplace=True)
-        st.dataframe(count_df,use_container_width=True) 
 
+    else:
+        #table1
+        count_df.rename_axis("Universidades",inplace=True)
+        count_df=count_df.sort_values(
+        by=[f"{x}º" for x in range(1, 13)] + ["Total"]+['Paticipaciones'],
+        ascending=False
+        )
+        st.write("Tabla de posiciones por universidades:")
+        st.dataframe(count_df)
+
+        #table 2
         m = medal_table(count_df)
         m = pd.concat([m,count_participation],axis=1)
         m.rename_axis("Universidades",inplace=True)
-        m.columns = ['Oro','Plata','Bronce']+['Total']+['Paticipaciones en el periodo']
+        m.columns = ['Oro','Plata','Bronce']+['Total']+['Paticipaciones']
+        m =  m.sort_values(
+        by=["Oro", "Plata", "Bronce"] + ["Total"],
+        ascending=False
+        )
         st.write("Tabla de medallas por universidades:")
-    st.dataframe(m, use_container_width=True)
+        st.dataframe(m, use_container_width=True)
 
 with st.container(border=True):
     st.text("Posiciones y medallas por universidades")
@@ -973,8 +998,7 @@ with st.container(border=True):
             region_filter = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in region_filter.items()]))
             count_total_ = region_filter.values.flatten()  
             count_series_ = pd.Series(count_total_).value_counts()
-
-            rank = count_series_[count_series_ >=u_min_parts ].index
+            rank = count_series_[count_series_ >= u_min_parts ].index
             apply_filter(region_filter,rank,count_series_)
             
 #Diego

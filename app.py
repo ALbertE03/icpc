@@ -965,7 +965,7 @@ with st.container(border=True):
         minimal_u_parts = (
             st.session_state["minimal_u1_parts"]
             if "minimal_u1_parts" in st.session_state
-            else 10
+            else 1
         )
         u_participations = [i for i in range(1, der - izq + 2)]
 

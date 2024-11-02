@@ -928,30 +928,42 @@ def medal_table(df):
     count_silver = new_df.iloc[:, 4:8].sum(axis=1)
     count_bronze = new_df.iloc[:, 8:].sum(axis=1)
     result = pd.concat([count_gold, count_silver, count_bronze], axis=1)
-    result["total"] = result.sum(axis=1)
-    result.columns = ["oro", "plata", "bronce"] + ["total"]
+    result["Total"] = result.sum(axis=1)
+    result.columns = ["Oro", "Plata", "Bronce"] + ["Total"]
+    result =  result.sort_values(
+        by=["Oro", "Plata", "Bronce"] + ["Total"],
+        ascending=False
+    )
     return result
 
 
 def apply_filter(df):
     def occurrences(row):
-        conteo = {}
+        counting = {}
         for elemento in row:
             if pd.notnull(elemento):
-                conteo[elemento] = row.tolist().count(elemento)
-        return conteo
+                counting[elemento] = row.tolist().count(elemento)
+        return counting
 
     count_row = df.apply(occurrences, axis=1)
     count_df = pd.DataFrame(count_row.tolist()).fillna(0).astype(int)
     count_df = count_df.T
     count_df = count_df.iloc[:, :12]
     count_df.rename_axis("Universidades", inplace=True)
-    count_df["total"] = count_df[count_df.columns].sum(axis=1)
-    count_df.columns = [f"posición {x}" for x in range(1, 13)] + ["total"]
+    count_df["Total"] = count_df[count_df.columns].sum(axis=1)
+    count_df.columns = [f"{x}º" for x in range(1, 13)] + ["Total"]
+    count_df=count_df.sort_values(
+        by=[f"{x}º" for x in range(1, 13)] + ["Total"],
+        ascending=False
+    )
+    st.write("Tabla de posiciones por universidades:")
     st.dataframe(count_df, use_container_width=True)
 
     m = medal_table(count_df)
+    st.write("Tabla de medallas por universidades:")
     st.dataframe(m, use_container_width=True)
+
+    
 
 
 with st.container(border=True):

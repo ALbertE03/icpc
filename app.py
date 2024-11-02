@@ -910,8 +910,8 @@ def get_uni_country_regions(izq,der,_country,filters):
             if j['country'] in result:
                 a.append(j['university'])
         end[str(i)]=a
-
     return end
+    
 def filter_name(a,b):
     s=[]
     for i in b:
@@ -929,6 +929,7 @@ def medal_table(df):
     result['total']=result.sum(axis=1)
     result.columns = ['oro','plata','bronce']+['total']
     return result
+
 def apply_filter(df):
     def occurrences(row):
             conteo = {}
@@ -982,6 +983,7 @@ with st.container(border=True):
             st.dataframe([],use_container_width=True)
             st.dataframe([],use_container_width=True)
         else:
+            region_filter = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in region_filter.items()]))
             apply_filter(region_filter)
             
 #Diego

@@ -5,8 +5,8 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import graphviz as gv
-import pandas as pd
-from collections import Counter
+
+
 
 
 with open("data/data-2006-2024.json", "r", encoding="UTF-8") as file:
@@ -836,6 +836,7 @@ with st.container(border=True):
 
         st.plotly_chart(fig_finalists, use_container_width=True)
 
+# Alberto
 def get_position(range_year):
     end = {}
     d = set()
@@ -868,53 +869,79 @@ def get_uni_country_regions(izq, der, _country, filters):
         end[str(i)] = a
     return end
 
-def filter_name(a, b):
-    s = []
-    for i in b:
-        if i in a:
-            s.append(i)
-    return s if len(s) != 0 else b
-
 def medal_table(df):
-    df.columns = [x for x in range(1, 14)]
-    new_df = df.iloc[:, :-1]
-    count_gold = new_df.iloc[:, :4].sum(axis=1)
-    count_silver = new_df.iloc[:, 4:8].sum(axis=1)
-    count_bronze = new_df.iloc[:, 8:].sum(axis=1)
-    result = pd.concat([count_gold, count_silver, count_bronze], axis=1)
-    result["Total"] = result.sum(axis=1)
-    result.columns = ["Oro", "Plata", "Bronce"] + ["Total"]
-    result =  result.sort_values(
-        by=["Oro", "Plata", "Bronce"] + ["Total"],
-        ascending=False
-    )
+    df.columns= [x for x in range(1,15)]
+    new_df = df.iloc[:,:-1]
+    count_gold = new_df.iloc[:,:4].sum(axis=1)
+    count_silver = new_df.iloc[:,4:8].sum(axis=1)            
+    count_bronze = new_df.iloc[:,8:].sum(axis=1)
+    result = pd.concat([count_gold,count_silver,count_bronze],axis=1)
+    result['total']=result.sum(axis=1)
     return result
 
-def apply_filter(df):
+def apply_filter(df,r,count_participation):
     def occurrences(row):
         counting = {}
-        for elemento in row:
-            if pd.notnull(elemento):
-                counting[elemento] = row.tolist().count(elemento)
+        for element in row:
+            if pd.notnull(element):
+                counting[element] = row.tolist().count(element)
         return counting
 
     count_row = df.apply(occurrences, axis=1)
     count_df = pd.DataFrame(count_row.tolist()).fillna(0).astype(int)
-    count_df = count_df.T
-    count_df = count_df.iloc[:, :12]
-    count_df.rename_axis("Universidades", inplace=True)
-    count_df["Total"] = count_df[count_df.columns].sum(axis=1)
-    count_df.columns = [f"{x}º" for x in range(1, 13)] + ["Total"]
-    count_df=count_df.sort_values(
-        by=[f"{x}º" for x in range(1, 13)] + ["Total"],
+    count_df=count_df.T
+    count_df= count_df.iloc[:,:12]
+    
+    count_df['Total'] = count_df[count_df.columns].sum(axis=1)
+    count_df = pd.concat([count_df,count_participation],axis=1)
+
+    count_df.columns = [f"{x}º" for x in range(1, 13)] + ["Total"]+['Paticipaciones']
+    
+    if len(r)!=0:
+        #table1
+        p = count_df.loc[r]
+        p.rename_axis("Universidades",inplace=True)
+        p=p.sort_values(
+        by=[f"{x}º" for x in range(1, 13)] + ["Total"]+['Paticipaciones'],
         ascending=False
     )
-    st.write("Tabla de posiciones por universidades:")
-    st.dataframe(count_df, use_container_width=True)
+        st.write("Tabla de posiciones por universidades:")
+        st.dataframe(p,use_container_width=True)
+         
+        #table 2
+        m = medal_table(count_df)
+        m = pd.concat([m,count_participation],axis=1)
+        m= m.loc[r]
+        m.rename_axis("Universidades",inplace=True)
+        m.columns = ['Oro','Plata','Bronce']+['Total']+['Paticipaciones']
+        m =  m.sort_values(
+        by=["Oro", "Plata", "Bronce"] + ["Total"],
+        ascending=False
+        )
+        st.write("Tabla de medallas por universidades:")
+        st.dataframe(m,use_container_width=True)
 
-    m = medal_table(count_df)
-    st.write("Tabla de medallas por universidades:")
-    st.dataframe(m, use_container_width=True)
+    else:
+        #table1
+        count_df.rename_axis("Universidades",inplace=True)
+        count_df=count_df.sort_values(
+        by=[f"{x}º" for x in range(1, 13)] + ["Total"]+['Paticipaciones'],
+        ascending=False
+        )
+        st.write("Tabla de posiciones por universidades:")
+        st.dataframe(count_df)
+
+        #table 2
+        m = medal_table(count_df)
+        m = pd.concat([m,count_participation],axis=1)
+        m.rename_axis("Universidades",inplace=True)
+        m.columns = ['Oro','Plata','Bronce']+['Total']+['Paticipaciones']
+        m =  m.sort_values(
+        by=["Oro", "Plata", "Bronce"] + ["Total"],
+        ascending=False
+        )
+        st.write("Tabla de medallas por universidades:")
+        st.dataframe(m, use_container_width=True)
 
 with st.container(border=True):
     st.text("Posiciones y medallas por universidades")
@@ -924,15 +951,28 @@ with st.container(border=True):
             "Selecciona el rango de años",
             options=range(minimal, maximal + 1),
             value=(2010, maximal),
-            key="minimal_position_parts",
+            key="minimal_position_parts1",
         )
-        max_ = der - izq + 1
-        participaciones_minimas_ = []
-        for i in range(1, max_ + 1):
-            participaciones_minimas_.append(i)
-        _minimal = st.selectbox(
-            "Selecccione la cantidad de participaciones Mínimas", participaciones_minimas_, index=0, key="min"
+        minimal_u_parts = (
+            st.session_state["minimal_u1_parts"]
+            if "minimal_u1_parts" in st.session_state
+            else 1
         )
+        u_participations = [i for i in range(1, der - izq + 2)]
+
+        if minimal_u_parts < der - izq + 1:
+            u_ind = u_participations.index(minimal_u_parts)
+        else:
+            u_ind = u_participations.index(der - izq + 1)
+
+        u_min_parts = st.selectbox(
+            "Seleccione la cantidad de participaciones mínima",
+            options=u_participations,
+            index=u_ind,
+            key="u_part_min1",
+        )
+
+        st.session_state["minimal_u1_parts"] = u_min_parts
 
         a_n_regions = ["Todas"] + [x for x in a_d_regions]
         region_uni = st.multiselect(
@@ -945,18 +985,23 @@ with st.container(border=True):
     with st.expander("Gráficos:"):
         df, country = get_position(range(izq, der + 1))
         df = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in df.items()]))
-        region_filter = get_uni_country_regions(izq, der, country, region_uni)
+        count_total = df.values.flatten()  
+        count_series = pd.Series(count_total).value_counts()
+        ranks = count_series[count_series >= u_min_parts].index
+        region_filter = get_uni_country_regions(izq,der,country,region_uni)
         if region_filter is None:
-            apply_filter(df)
-        elif region_filter == "void":
-            st.dataframe([], use_container_width=True)
-            st.dataframe([], use_container_width=True)
+            apply_filter(df,ranks,count_series)
+        elif region_filter =='void':
+            st.dataframe([],use_container_width=True)
+            st.dataframe([],use_container_width=True)
         else:
-            region_filter = pd.DataFrame(
-                dict([(k, pd.Series(v)) for k, v in region_filter.items()])
-            )
-            apply_filter(region_filter)
-
+            region_filter = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in region_filter.items()]))
+            count_total_ = region_filter.values.flatten()  
+            count_series_ = pd.Series(count_total_).value_counts()
+            rank = count_series_[count_series_ >= u_min_parts ].index
+            apply_filter(region_filter,rank,count_series_)
+            
+#Diego
 with st.container(border=True):
 
     st.text("Posiciones y medallas por País")

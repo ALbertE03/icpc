@@ -160,12 +160,14 @@ with st.container(border=True):
         universities = {}
         for year in range(u_first, u_last + 1):
             year = str(year)
+            univ_year = set()
             for team in contests[year]:
                 c = team["university"]
-                if c in universities:
+                if c in universities and (not c in univ_year):
                     universities[c]["count"] += 1
                 else:
                     universities[c] = {"count": 1, "country": team["country"]}
+                univ_year.add(c)
 
         if "Todas" not in u_s_regions:
             universities = {

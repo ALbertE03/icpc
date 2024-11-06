@@ -408,7 +408,7 @@ with st.container(border=True):
             )
         )
         for u, v in pu_univs.items():
-            po_fig.add_trace(go.Scatter(x=years, y=v["place"], name=u, mode="markers"))
+            po_fig.add_trace(go.Scatter(x=years, y=v["place"], name=u, mode="markers",marker=dict(size=15),))
         po_fig.update_xaxes(showgrid=True, dtick=1)
         po_fig.update_yaxes(autorange="reversed")
         po_fig.update_layout(
@@ -483,7 +483,7 @@ with st.container(border=True):
             )
             for u, v in pu_univs.items():
                 ps_fig.add_trace(
-                    go.Scatter(x=years, y=v["solved"], name=u, mode="markers")
+                    go.Scatter(x=years, y=v["solved"], name=u, mode="markers",marker=dict(size=15),)
                 )
             ps_fig.update_xaxes(showgrid=True, dtick=1)
             ps_fig.update_layout(
@@ -548,6 +548,9 @@ with st.container(border=True):
         perc_solv = [(x, y["solved"] * 100 / y["total"]) for x, y in a_univs.items()]
         prob_solv.sort(key=lambda x: x[1], reverse=True)
         perc_solv.sort(key=lambda x: x[1], reverse=True)
+
+        # for i in range(0,len(perc_solv)):
+        #     st.write((i+1,perc_solv[i]))
 
         if len(prob_solv) < amount:
             y_a = [c[0] for c in prob_solv]
@@ -897,14 +900,14 @@ def apply_filter(df,r,count_participation):
     count_df['Total'] = count_df[count_df.columns].sum(axis=1)
     count_df = pd.concat([count_df,count_participation],axis=1)
 
-    count_df.columns = [f"{x}º" for x in range(1, 13)] + ["Total"]+['Paticipaciones']
+    count_df.columns = [f"{x}º" for x in range(1, 13)] + ["Total"]+['Participaciones']
     
     if len(r)!=0:
         #table1
         p = count_df.loc[r]
         p.rename_axis("Universidades",inplace=True)
         p=p.sort_values(
-        by=[f"{x}º" for x in range(1, 13)] + ["Total"]+['Paticipaciones'],
+        by=[f"{x}º" for x in range(1, 13)] + ["Total"]+['Participaciones'],
         ascending=False
     )
         st.write("Tabla de posiciones por universidades:")
@@ -915,7 +918,7 @@ def apply_filter(df,r,count_participation):
         m = pd.concat([m,count_participation],axis=1)
         m= m.loc[r]
         m.rename_axis("Universidades",inplace=True)
-        m.columns = ['Oro','Plata','Bronce']+['Total']+['Paticipaciones']
+        m.columns = ['Oro','Plata','Bronce']+['Total']+['Participaciones']
         m =  m.sort_values(
         by=["Oro", "Plata", "Bronce"] + ["Total"],
         ascending=False
@@ -927,7 +930,7 @@ def apply_filter(df,r,count_participation):
         #table1
         count_df.rename_axis("Universidades",inplace=True)
         count_df=count_df.sort_values(
-        by=[f"{x}º" for x in range(1, 13)] + ["Total"]+['Paticipaciones'],
+        by=[f"{x}º" for x in range(1, 13)] + ["Total"]+['Participaciones'],
         ascending=False
         )
         st.write("Tabla de posiciones por universidades:")
@@ -937,7 +940,7 @@ def apply_filter(df,r,count_participation):
         m = medal_table(count_df)
         m = pd.concat([m,count_participation],axis=1)
         m.rename_axis("Universidades",inplace=True)
-        m.columns = ['Oro','Plata','Bronce']+['Total']+['Paticipaciones']
+        m.columns = ['Oro','Plata','Bronce']+['Total']+['Participaciones']
         m =  m.sort_values(
         by=["Oro", "Plata", "Bronce"] + ["Total"],
         ascending=False
